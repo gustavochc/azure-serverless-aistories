@@ -1,6 +1,6 @@
-# Azure Refactor for AI Stories
+# Azure AI Stories
 
-This repository has been refactored to Azure with the following structure:
+This app has been created in Azure with the following structure:
 
 - `azure/infra` - Azure Bicep deployment for Storage, App Service (Linux, function app + frontend), Cosmos DB, Event Grid, and Key Vault.
 - `azure/function-app` - Azure Functions app for story generation (scheduled + on-demand), audio generation, image generation, story retrieval, and email notification.
