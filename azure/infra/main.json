@@ -1,0 +1,172 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.46.1.21595",
+      "templateHash": "7056117701265596123"
+    }
+  },
+  "parameters": {
+    "prefix": {
+      "type": "string",
+      "defaultValue": "aistories",
+      "metadata": {
+        "description": "Name prefix for deployed resources"
+      }
+    },
+    "location": {
+      "type": "string",
+      "defaultValue": "[resourceGroup().location]"
+    },
+    "deployKeyVault": {
+      "type": "bool",
+      "defaultValue": false
+    }
+  },
+  "variables": {
+    "storageName": "[toLower(format('{0}storage', parameters('prefix')))]",
+    "cosmosName": "[toLower(format('{0}cosmos', parameters('prefix')))]",
+    "functionName": "[format('{0}-func', parameters('prefix'))]",
+    "planName": "[format('{0}-plan', parameters('prefix'))]",
+    "keyVaultName": "[format('{0}-kv', parameters('prefix'))]",
+    "eventGridTopicName": "[format('{0}-events', parameters('prefix'))]"
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Storage/storageAccounts",
+      "apiVersion": "2023-09-01",
+      "name": "[variables('storageName')]",
+      "location": "[parameters('location')]",
+      "sku": {
+        "name": "Standard_LRS"
+      },
+      "kind": "StorageV2",
+      "properties": {
+        "accessTier": "Hot",
+        "allowBlobPublicAccess": false
+      }
+    },
+    {
+      "type": "Microsoft.Web/serverfarms",
+      "apiVersion": "2023-10-01",
+      "name": "[variables('planName')]",
+      "location": "[parameters('location')]",
+      "kind": "functionapp",
+      "sku": {
+        "name": "Y1",
+        "tier": "Dynamic"
+      }
+    },
+    {
+      "type": "Microsoft.Web/sites",
+      "apiVersion": "2023-10-01",
+      "name": "[variables('functionName')]",
+      "location": "[parameters('location')]",
+      "kind": "functionapp,linux",
+      "properties": {
+        "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', variables('planName'))]",
+        "siteConfig": {
+          "appSettings": [
+            {
+              "name": "AzureWebJobsStorage",
+              "value": "[reference(resourceId('Microsoft.Storage/storageAccounts', variables('storageName')), '2023-09-01').primaryEndpoints.blob]"
+            },
+            {
+              "name": "FUNCTIONS_WORKER_RUNTIME",
+              "value": "node"
+            },
+            {
+              "name": "WEBSITE_RUN_FROM_PACKAGE",
+              "value": "1"
+            }
+          ]
+        }
+      },
+      "identity": {
+        "type": "SystemAssigned"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Web/serverfarms', variables('planName'))]",
+        "[resourceId('Microsoft.Storage/storageAccounts', variables('storageName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.DocumentDB/databaseAccounts",
+      "apiVersion": "2023-11-15",
+      "name": "[variables('cosmosName')]",
+      "location": "[parameters('location')]",
+      "kind": "MongoDB",
+      "properties": {
+        "databaseAccountOfferType": "Standard",
+        "enableFreeTier": true,
+        "locations": [
+          {
+            "locationName": "[parameters('location')]",
+            "failoverPriority": 0,
+            "isZoneRedundant": false
+          }
+        ],
+        "capabilities": [
+          {
+            "name": "EnableMongo"
+          }
+        ],
+        "consistencyPolicy": {
+          "defaultConsistencyLevel": "Session"
+        }
+      }
+    },
+    {
+      "condition": "[parameters('deployKeyVault')]",
+      "type": "Microsoft.KeyVault/vaults",
+      "apiVersion": "2024-07-01",
+      "name": "[variables('keyVaultName')]",
+      "location": "[parameters('location')]",
+      "properties": {
+        "tenantId": "[subscription().tenantId]",
+        "sku": {
+          "family": "A",
+          "name": "standard"
+        },
+        "accessPolicies": [],
+        "enabledForDeployment": true,
+        "enabledForTemplateDeployment": true,
+        "enablePurgeProtection": false,
+        "enableSoftDelete": true
+      }
+    },
+    {
+      "type": "Microsoft.EventGrid/topics",
+      "apiVersion": "2024-06-01",
+      "name": "[variables('eventGridTopicName')]",
+      "location": "[parameters('location')]",
+      "properties": {
+        "inputSchema": "EventGridSchema"
+      }
+    }
+  ],
+  "outputs": {
+    "functionAppName": {
+      "type": "string",
+      "value": "[variables('functionName')]"
+    },
+    "storageAccountName": {
+      "type": "string",
+      "value": "[variables('storageName')]"
+    },
+    "cosmosAccountName": {
+      "type": "string",
+      "value": "[variables('cosmosName')]"
+    },
+    "keyVaultName": {
+      "type": "string",
+      "value": "[variables('keyVaultName')]"
+    },
+    "eventGridTopicName": {
+      "type": "string",
+      "value": "[variables('eventGridTopicName')]"
+    }
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "name": "ai-stories-local-dev",
+  "private": true,
+  "scripts": {
+    "dev:mock": "./scripts/dev-mock.sh"
+  }
+}

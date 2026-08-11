@@ -1,0 +1,28 @@
+{
+  "name": "azure-ai-stories-functions",
+  "version": "0.1.0",
+  "private": true,
+  "main": "dist/{createStory,createCustomStory,generateAudio,generateImages,getStory,notifyStoryCreated}/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "func start --typescript",
+    "test": "echo \"No tests configured\""
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "dependencies": {
+    "@azure/cosmos": "^4.10.0",
+    "@azure/eventgrid": "^5.5.0",
+    "@azure/functions": "^4.16.2",
+    "@azure/storage-blob": "^12.33.0",
+    "node-fetch": "^3.3.2",
+    "nodemailer": "^9.0.5",
+    "openai": "^7.4.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/nodemailer": "^8.0.1",
+    "typescript": "^7.0.2"
+  }
+}

@@ -1,0 +1,154 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="780" viewBox="0 0 1600 780">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#333" />
+    </marker>
+    <marker id="arrowDashed" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#8a94a6" />
+    </marker>
+    <style>
+      .box { fill: #f8f9fa; stroke: #45546d; stroke-width: 2; rx: 16; ry: 16; }
+      .subbox { fill: #ffffff; stroke: #7b8aa2; stroke-width: 1.5; rx: 10; ry: 10; }
+      .kvbox { fill: #fbfbfe; stroke: #9aa3b5; stroke-width: 1.5; stroke-dasharray: 6 5; rx: 14; ry: 14; }
+      .title { font: 700 20px Arial, sans-serif; fill: #1f2937; }
+      .subtitle { font: 700 15px Arial, sans-serif; fill: #1f2937; }
+      .label { font: 14px Arial, sans-serif; fill: #1f2937; }
+      .caption { font: 12px Arial, sans-serif; fill: #4b5563; }
+      .arrow { fill: none; stroke: #334155; stroke-width: 2; marker-end: url(#arrow); }
+      .dashed { stroke-dasharray: 7 5; stroke: #8a94a6; marker-end: url(#arrowDashed); }
+    </style>
+  </defs>
+
+  <rect x="20" y="20" width="1560" height="740" rx="28" ry="28" fill="#ffffff" stroke="#cbd5e1" stroke-width="2" />
+  <text x="800" y="55" text-anchor="middle" class="title">Azure AI Stories — Architecture</text>
+  <text x="800" y="76" text-anchor="middle" class="caption">Single Bicep template (main.bicep), parameterized by "prefix" — Linux Consumption Function App + Linux App Service (F1) frontend</text>
+
+  <!-- Frontend -->
+  <g>
+    <rect x="50" y="140" width="230" height="150" class="box" />
+    <text x="165" y="170" text-anchor="middle" class="subtitle">Frontend</text>
+    <text x="165" y="200" text-anchor="middle" class="label">Next.js on App Service</text>
+    <text x="165" y="220" text-anchor="middle" class="caption">(Linux, F1 free tier)</text>
+    <text x="165" y="248" text-anchor="middle" class="caption">/api/story proxy polls</text>
+    <text x="165" y="264" text-anchor="middle" class="caption">every 5s (up to 24x) until</text>
+    <text x="165" y="280" text-anchor="middle" class="caption">audioURL/thumbnail appear</text>
+  </g>
+
+  <!-- Creator functions -->
+  <g>
+    <rect x="340" y="90" width="280" height="250" class="box" />
+    <text x="480" y="118" text-anchor="middle" class="subtitle">Function App — creators</text>
+    <rect x="360" y="135" width="240" height="45" class="subbox" />
+    <text x="480" y="155" text-anchor="middle" class="label">createStory</text>
+    <text x="480" y="172" text-anchor="middle" class="caption">Timer trigger (sparse cron)</text>
+    <rect x="360" y="190" width="240" height="45" class="subbox" />
+    <text x="480" y="210" text-anchor="middle" class="label">createCustomStory</text>
+    <text x="480" y="227" text-anchor="middle" class="caption">HTTP trigger, function key</text>
+    <rect x="360" y="245" width="240" height="45" class="subbox" />
+    <text x="480" y="265" text-anchor="middle" class="label">getStory</text>
+    <text x="480" y="282" text-anchor="middle" class="caption">HTTP trigger, anonymous</text>
+  </g>
+
+  <!-- Event Grid -->
+  <g>
+    <rect x="680" y="155" width="220" height="110" class="box" />
+    <text x="790" y="185" text-anchor="middle" class="subtitle">Event Grid</text>
+    <text x="790" y="210" text-anchor="middle" class="label">StoryCreated topic</text>
+    <text x="790" y="230" text-anchor="middle" class="caption">fans out to 3 subscribers</text>
+  </g>
+
+  <!-- Subscriber functions -->
+  <g>
+    <rect x="960" y="90" width="280" height="250" class="box" />
+    <text x="1100" y="118" text-anchor="middle" class="subtitle">Function App — subscribers</text>
+    <rect x="980" y="135" width="240" height="45" class="subbox" />
+    <text x="1100" y="155" text-anchor="middle" class="label">generateAudio</text>
+    <text x="1100" y="172" text-anchor="middle" class="caption">Event Grid trigger</text>
+    <rect x="980" y="190" width="240" height="45" class="subbox" />
+    <text x="1100" y="210" text-anchor="middle" class="label">generateImages</text>
+    <text x="1100" y="227" text-anchor="middle" class="caption">Event Grid trigger</text>
+    <rect x="980" y="245" width="240" height="45" class="subbox" />
+    <text x="1100" y="265" text-anchor="middle" class="label">notifyStoryCreated</text>
+    <text x="1100" y="282" text-anchor="middle" class="caption">Event Grid trigger</text>
+  </g>
+
+  <!-- External services -->
+  <g>
+    <rect x="1300" y="90" width="250" height="95" class="box" />
+    <text x="1425" y="115" text-anchor="middle" class="subtitle">OpenAI API</text>
+    <text x="1425" y="138" text-anchor="middle" class="caption">gpt-4o-mini (text)</text>
+    <text x="1425" y="154" text-anchor="middle" class="caption">gpt-4o-mini-tts (audio)</text>
+    <text x="1425" y="170" text-anchor="middle" class="caption">gpt-image-1 (image)</text>
+  </g>
+  <g>
+    <rect x="1300" y="200" width="250" height="95" class="box" />
+    <text x="1425" y="225" text-anchor="middle" class="subtitle">Blob Storage</text>
+    <text x="1425" y="248" text-anchor="middle" class="caption">audio.mp3 + image.png</text>
+    <text x="1425" y="264" text-anchor="middle" class="caption">2-day SAS URLs</text>
+    <text x="1425" y="280" text-anchor="middle" class="caption">for the frontend</text>
+  </g>
+  <g>
+    <rect x="1300" y="310" width="250" height="95" class="box" />
+    <text x="1425" y="335" text-anchor="middle" class="subtitle">SMTP (Gmail)</text>
+    <text x="1425" y="358" text-anchor="middle" class="caption">nodemailer</text>
+    <text x="1425" y="374" text-anchor="middle" class="caption">emails NOTIFY_EMAIL_TO with a</text>
+    <text x="1425" y="390" text-anchor="middle" class="caption">FRONTEND_BASE_URL/story?id= link</text>
+  </g>
+
+  <!-- Cosmos DB -->
+  <g>
+    <rect x="340" y="460" width="900" height="90" class="box" />
+    <text x="790" y="488" text-anchor="middle" class="subtitle">Cosmos DB (SQL/Core API)</text>
+    <text x="790" y="510" text-anchor="middle" class="label">Database "aiStoriesDb" — containers: characters, scenes, stories</text>
+    <text x="790" y="530" text-anchor="middle" class="caption">stories documents auto-expire after 2 days (ttl: 172800)</text>
+  </g>
+
+  <!-- Key Vault / settings -->
+  <g>
+    <rect x="340" y="580" width="900" height="90" class="kvbox" />
+    <text x="790" y="608" text-anchor="middle" class="subtitle">Key Vault + Function App Settings</text>
+    <text x="790" y="632" text-anchor="middle" class="label">OPENAI_API_KEY · COSMOS_DB_CONNECTION_STRING · EVENTGRID_KEY</text>
+    <text x="790" y="650" text-anchor="middle" class="caption">SMTP_HOST/PORT/USER/PASS · NOTIFY_EMAIL_TO · FRONTEND_BASE_URL — read by both function groups above</text>
+  </g>
+  <path d="M 460 580 L 460 342" class="dashed" />
+  <path d="M 1120 580 L 1120 342" class="dashed" />
+
+  <!-- Frontend <-> getStory -->
+  <path d="M 280 260 L 358 267" class="arrow" />
+  <text x="300" y="252" class="caption">GET /api/story?id=</text>
+
+  <!-- Creator -> Event Grid -->
+  <path d="M 600 158 L 678 190" class="arrow" />
+  <path d="M 600 212 L 678 210" class="arrow" />
+  <text x="605" y="185" class="caption">publish StoryCreated</text>
+
+  <!-- Event Grid -> Subscribers -->
+  <path d="M 900 190 L 978 158" class="arrow" />
+  <path d="M 900 208 L 978 212" class="arrow" />
+  <path d="M 900 230 L 978 267" class="arrow" />
+  <text x="905" y="248" class="caption">StoryCreated event</text>
+
+  <!-- Subscribers -> External services -->
+  <path d="M 1220 150 L 1298 135" class="arrow" />
+  <text x="1225" y="130" class="caption">TTS request</text>
+  <path d="M 1220 165 L 1298 245" class="arrow" />
+  <text x="1225" y="185" class="caption">upload audio.mp3</text>
+  <path d="M 1220 205 L 1298 155" class="arrow" />
+  <text x="1225" y="205" class="caption">image request</text>
+  <path d="M 1220 220 L 1298 260" class="arrow" />
+  <text x="1225" y="235" class="caption">upload image.png</text>
+  <path d="M 1220 267 L 1298 355" class="arrow" />
+  <text x="1225" y="300" class="caption">send email</text>
+
+  <!-- Creators -> Cosmos -->
+  <path d="M 420 340 L 420 458" class="arrow" />
+  <text x="428" y="410" class="caption">save story</text>
+  <path d="M 540 340 L 540 458" class="arrow" />
+  <text x="548" y="410" class="caption">read story</text>
+
+  <!-- Subscribers -> Cosmos -->
+  <path d="M 1050 340 L 1050 458" class="arrow" />
+  <text x="1058" y="410" class="caption">update audioURL</text>
+  <path d="M 1160 340 L 1160 458" class="arrow" />
+  <text x="1168" y="410" class="caption">update thumbnail</text>
+</svg>

@@ -1,0 +1,9 @@
+tmp/
+.vscode/
+.venv/
+.tmp-node/
+azure/frontend/.next/
+azure/frontend/node_modules/
+azure/function-app/node_modules/
+azure/function-app/.azure-functions/
+aws/*
