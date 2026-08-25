@@ -9,8 +9,25 @@ const storiesContainer = database?.container(process.env.STORIES_COLLECTION || '
 const mockStory = {
   id: 'demo',
   title: 'The Moonlit Garden',
+  story: 'A gentle mock story served by the function app when no Cosmos DB is configured. Set COSMOS_DB_CONNECTION_STRING to read real stories.',
   description: 'A gentle mock story served by the function app when no Cosmos DB is configured. Set COSMOS_DB_CONNECTION_STRING to read real stories.',
+  scenes: [],
+  audio: { audioURL: '', durationSeconds: 0, status: 'pending' },
+  assetsStatus: { storyGenerated: true, audioGenerated: false, imagesGenerated: 0, totalImages: 6, completed: false },
 };
+
+// Fills legacy top-level fields (story/thumbnail/audioURL) from the Story Package
+// fields when missing, so older/newer clients both keep working.
+function withBackwardsCompatibility(resource: any) {
+  const scenes = Array.isArray(resource.scenes) ? resource.scenes : [];
+  return {
+    ...resource,
+    story: resource.story || resource.description || '',
+    description: resource.description || resource.story || '',
+    thumbnail: resource.thumbnail || scenes[0]?.imageUrl || '',
+    audioURL: resource.audioURL || resource.audio?.audioURL || '',
+  };
+}
 
 export async function getStory(req: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> {
   const id = req.query.get('id');
@@ -30,7 +47,7 @@ export async function getStory(req: HttpRequest, context: InvocationContext): Pr
       return { status: 404, jsonBody: { error: 'Story not found' } };
     }
 
-    return { status: 200, jsonBody: resource };
+    return { status: 200, jsonBody: withBackwardsCompatibility(resource) };
   } catch (error) {
     context.error('Cosmos read failed', error);
     return { status: 500, jsonBody: { error: 'Failed to read story' } };
@@ -43,3 +60,4 @@ app.http('getStory', {
   route: 'story',
   handler: getStory,
 });
+

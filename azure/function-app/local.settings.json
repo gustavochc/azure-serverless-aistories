@@ -8,6 +8,9 @@
     "STORIES_DATABASE": "aiStoriesDb",
     "STORIES_COLLECTION": "stories",
     "CHARACTERS_COLLECTION": "characters",
-    "SCENES_COLLECTION": "scenes"
+    "SCENES_COLLECTION": "scenes",
+    "CHILD_PROFILES_COLLECTION": "childProfiles",
+    "IMAGES_PER_STORY": "6",
+    "ENABLE_MULTI_SCENE_IMAGES": "true"
   }
 }

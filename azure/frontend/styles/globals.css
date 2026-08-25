@@ -101,6 +101,25 @@ a {
   padding: 0.5rem;
 }
 
+.story-scene-indicators {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.story-scene-dot {
+  width: 0.6rem;
+  height: 0.6rem;
+  border-radius: 999px;
+  background: rgba(226, 232, 240, 0.3);
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.story-scene-dot-active {
+  background: #818cf8;
+  transform: scale(1.3);
+}
+
 .story-text {
   margin-top: 2.5rem;
   font-size: 1.125rem;

@@ -23,7 +23,11 @@ The main cost drivers in this app are:
 3. Storage for generated assets
 4. OpenAI API calls for story, image (`gpt-image-1`), and audio generation
 
+Each story now generates a **Story Package** with 6 scene images instead of 1 (`IMAGES_PER_STORY`, default `6`), so `gpt-image-1` cost per story is up to 6x what it was before. Lower `IMAGES_PER_STORY` (e.g. `1`-`2`) during testing, or set `ENABLE_MULTI_SCENE_IMAGES=false` to skip image generation entirely, to control this.
+
 Email notifications (SMTP via a free Gmail account) add no meaningful cost.
+
+**Fase 2/3 cost impact**: the `childProfiles` container (persistent character memory) adds one small Cosmos container at 400 RU/s — negligible, and covered by the free-tier RU/s pool if `cosmosFreeTier=true`. Fase 3's parallel scene-image generation (`SceneImageRequested` fan-out to `generateSceneImage`) doesn't change the total number of `gpt-image-1` calls per story (still up to `IMAGES_PER_STORY`) — it only parallelizes them across separate Function invocations, so total OpenAI cost per story is unchanged, just faster wall-clock time. Running many scenes concurrently can occasionally hit transient OpenAI rate limits under load; a failed scene is isolated (marked `status: "failed"`) and can be retried by republishing its event at no cost to the other scenes.
 
 The configuration now minimizes these by:
 
@@ -72,6 +76,8 @@ Set these in the app settings when needed:
 
 - `ENABLE_AI_GENERATION=true` to enable paid AI runs
 - `USE_MOCK_DATA=true` to keep the frontend in local mock mode
+- `IMAGES_PER_STORY` (default `6`) to control how many of the 6 scenes get an image generated per story
+- `ENABLE_MULTI_SCENE_IMAGES=false` to disable image generation entirely while testing the story/audio flow
 
 ## Summary
 

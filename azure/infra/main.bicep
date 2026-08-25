@@ -113,6 +113,10 @@ resource functionApp 'Microsoft.Web/sites@2024-11-01' = {
           value: eventGridTopic.listKeys().key1
         }
         {
+          name: 'CHILD_PROFILES_COLLECTION'
+          value: 'childProfiles'
+        }
+        {
           name: 'ENABLE_AI_GENERATION'
           value: enableAiGeneration ? 'true' : 'false'
         }
@@ -236,6 +240,22 @@ resource storiesContainer 'Microsoft.DocumentDB/databaseAccounts/sqlDatabases/co
   }
 }
 
+resource childProfilesContainer 'Microsoft.DocumentDB/databaseAccounts/sqlDatabases/containers@2023-11-15' = {
+  parent: cosmosDatabase
+  name: 'childProfiles'
+  properties: {
+    resource: {
+      id: 'childProfiles'
+      partitionKey: {
+        paths: [
+          '/id'
+        ]
+        kind: 'Hash'
+      }
+    }
+  }
+}
+
 resource keyVault 'Microsoft.KeyVault/vaults@2024-11-01' = if (deployKeyVault) {
   name: keyVaultName
   location: location
@@ -310,6 +330,11 @@ resource generateImagesFunction 'Microsoft.Web/sites/functions@2024-11-01' exist
   name: 'generateImages'
 }
 
+resource generateSceneImageFunction 'Microsoft.Web/sites/functions@2024-11-01' existing = if (deployEventGridSubscriptions) {
+  parent: functionApp
+  name: 'generateSceneImage'
+}
+
 resource notifyStoryCreatedFunction 'Microsoft.Web/sites/functions@2024-11-01' existing = if (deployEventGridSubscriptions) {
   parent: functionApp
   name: 'notifyStoryCreated'
@@ -369,6 +394,29 @@ resource generateImagesSubscription 'Microsoft.EventGrid/eventSubscriptions@2025
     filter: {
       includedEventTypes: [
         'StoryCreated'
+      ]
+    }
+    eventDeliverySchema: 'EventGridSchema'
+  }
+}
+
+// Phase 3: fan-out subscription — generateImages publishes one SceneImageRequested event per
+// scene onto this same topic, and each is delivered to an independent generateSceneImage
+// invocation so scenes generate their images in parallel.
+resource generateSceneImageSubscription 'Microsoft.EventGrid/eventSubscriptions@2025-02-15' = if (deployEventGridSubscriptions) {
+  name: 'generateSceneImage-sub'
+  scope: eventGridTopic
+  properties: {
+    destination: {
+      endpointType: 'AzureFunction'
+      properties: {
+        resourceId: generateSceneImageFunction.id
+        maxEventsPerBatch: 1
+      }
+    }
+    filter: {
+      includedEventTypes: [
+        'SceneImageRequested'
       ]
     }
     eventDeliverySchema: 'EventGridSchema'

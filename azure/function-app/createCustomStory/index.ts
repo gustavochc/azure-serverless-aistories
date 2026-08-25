@@ -2,12 +2,15 @@ import { app, HttpRequest, HttpResponseInit, InvocationContext } from '@azure/fu
 import { CosmosClient } from '@azure/cosmos';
 import OpenAI from 'openai';
 import { EventGridPublisherClient, AzureKeyCredential } from '@azure/eventgrid';
-import { buildBedtimePrompt, cleanTitle } from '../shared/storyPrompt';
+import { buildBedtimePrompt, safeParseStoryPackage } from '../shared/storyPrompt';
+import { loadChildProfiles, buildMemoryContext, upsertChildProfiles } from '../shared/childProfile';
+import { StoryCreatedEventData } from '../shared/types';
 
 const cosmos = new CosmosClient(process.env.COSMOS_DB_CONNECTION_STRING || '');
 const database = cosmos.database(process.env.STORIES_DATABASE || 'aiStoriesDb');
 const scenesContainer = database.container(process.env.SCENES_COLLECTION || 'scenes');
 const storiesContainer = database.container(process.env.STORIES_COLLECTION || 'stories');
+const childProfilesContainer = database.container(process.env.CHILD_PROFILES_COLLECTION || 'childProfiles');
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
@@ -43,26 +46,30 @@ export async function createCustomStory(req: HttpRequest, _context: InvocationCo
   }
 
   const characters = names.map((name, idx) => ({ id: String(idx + 1), name }));
-  const prompt = buildBedtimePrompt(names, theme);
+
+  const memoryProfiles = await loadChildProfiles(childProfilesContainer, names).catch(() => []);
+  const memoryContext = buildMemoryContext(memoryProfiles);
+  const prompt = buildBedtimePrompt(names, theme, memoryContext);
 
   const result = await openai.chat.completions.create({
     model: 'gpt-4o-mini',
     messages: [{ role: 'user', content: prompt }],
-    max_tokens: 1000,
+    max_tokens: 3000,
     temperature: 0.7,
   });
 
-  const storyText = result.choices[0]?.message?.content?.trim() || '';
-  const storyParts = storyText.split('\n');
-  const title = cleanTitle(storyParts.shift() || 'Untitled Story');
-  const description = storyParts.join('\n').trim();
+  const raw = result.choices[0]?.message?.content?.trim() || '';
+  const storyPackage = safeParseStoryPackage(raw, names.join(' and '));
 
   const createResponse = await storiesContainer.items.create({
     id: crypto.randomUUID(),
-    title,
+    ...storyPackage,
     characters,
-    description,
     scene: theme,
+    // Legacy fields kept for backwards compatibility with the current frontend/model.
+    description: storyPackage.description,
+    thumbnail: '',
+    audioURL: '',
     createdAt: new Date().toISOString(),
     ttl: 172800,
   });
@@ -73,18 +80,26 @@ export async function createCustomStory(req: HttpRequest, _context: InvocationCo
     return { status: 500, jsonBody: { error: 'Failed to create story.' } };
   }
 
+  await upsertChildProfiles(childProfilesContainer, names, story.id, story.characterSheet?.appearance || '', story.memoryUpdate).catch((error) => {
+    _context.error('Failed to update child profiles (non-fatal)', error);
+  });
+
   if (eventGridClient) {
+    const eventData: StoryCreatedEventData = {
+      id: story.id,
+      title: story.title,
+      story: story.story,
+      description: story.description,
+      scenes: story.scenes,
+      characterSheet: story.characterSheet,
+      estimatedDurationSeconds: story.estimatedDurationSeconds,
+    };
     await eventGridClient.send([
       {
         eventType: 'StoryCreated',
         subject: `/stories/${story.id}`,
         dataVersion: '1.0',
-        data: {
-          id: story.id,
-          title: story.title,
-          description: story.description,
-          scene: story.scene,
-        },
+        data: eventData,
       },
     ]);
   }

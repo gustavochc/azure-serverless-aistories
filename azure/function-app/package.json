@@ -2,7 +2,7 @@
   "name": "azure-ai-stories-functions",
   "version": "0.1.0",
   "private": true,
-  "main": "dist/{createStory,createCustomStory,generateAudio,generateImages,getStory,notifyStoryCreated}/index.js",
+  "main": "dist/{createStory,createCustomStory,generateAudio,generateImages,generateSceneImage,getStory,notifyStoryCreated}/index.js",
   "scripts": {
     "build": "tsc",
     "start": "func start --typescript",
