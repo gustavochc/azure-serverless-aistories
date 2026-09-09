@@ -14,6 +14,8 @@ param smtpUser string = ''
 param smtpPass string = ''
 param notifyEmailTo string = ''
 param cosmosFreeTier bool = true
+param useServerlessCosmos bool = false
+param serverlessCosmosName string = '${prefix}serverlesscosmos'
 
 var storageName = toLower('${prefix}storage')
 var cosmosName = toLower('${prefix}cosmos')
@@ -94,7 +96,9 @@ resource functionApp 'Microsoft.Web/sites@2024-11-01' = {
         }
         {
           name: 'COSMOS_DB_CONNECTION_STRING'
-          value: cosmosAccount.listConnectionStrings().connectionStrings[0].connectionString
+          value: useServerlessCosmos
+            ? serverlessCosmosAccount.listConnectionStrings().connectionStrings[0].connectionString
+            : cosmosAccount.listConnectionStrings().connectionStrings[0].connectionString
         }
         {
           name: 'AZURE_STORAGE_ACCOUNT_NAME'
@@ -179,6 +183,10 @@ resource cosmosAccount 'Microsoft.DocumentDB/databaseAccounts@2023-11-15' = {
       defaultConsistencyLevel: 'Session'
     }
   }
+}
+
+resource serverlessCosmosAccount 'Microsoft.DocumentDB/databaseAccounts@2023-11-15' existing = {
+  name: serverlessCosmosName
 }
 
 resource cosmosDatabase 'Microsoft.DocumentDB/databaseAccounts/sqlDatabases@2023-11-15' = {

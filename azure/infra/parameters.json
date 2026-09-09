@@ -4,6 +4,12 @@
   "parameters": {
     "prefix": {
       "value": "aistories"
+    },
+    "cosmosFreeTier": {
+      "value": true
+    },
+    "useServerlessCosmos": {
+      "value": true
     }
   }
 }
